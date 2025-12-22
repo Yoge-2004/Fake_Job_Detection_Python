@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>JobGuard | AI Recruitment Fraud Detection System</title>
+    
+    <meta name="theme-color" content="#05080a">
+    <meta name="msapplication-navbutton-color" content="#05080a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <canvas id="matrixCanvas"></canvas>
+    <div class="crt-overlay"></div>
+
+    <div class="cyber-void">
+        <div class="threat-obj obj-shield"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="threat-obj obj-ghost"><i class="fa-solid fa-ghost"></i></div>
+        <div class="threat-obj obj-bug"><i class="fa-solid fa-bug"></i></div>
+        <div class="threat-obj obj-eye"><i class="fa-solid fa-eye"></i></div>
+    </div>
+
+    <div class="interface-wrapper">
+        <header class="hud-header">
+            <div class="header-left">
+                <div class="logo-glitch" data-text="JOBGUARD_AI">JOBGUARD_AI</div>
+                <div class="sys-status">:: NEURAL_DEFENSE_GRID_ONLINE ::</div>
+            </div>
+            
+            <div class="user-profile">
+                <div class="profile-info">
+                    <span class="p-name" id="profileName">OPERATOR: LOADING...</span>
+                    <span class="p-role">LEVEL 5 ACCESS</span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="logout-btn delete-btn" id="deleteAccountBtn" title="Delete Account">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    
+                    <button class="logout-btn" id="logoutBtn" title="Logout">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            
+            <section class="panel scanner-panel">
+                <div class="panel-header">
+                    <i class="fa-solid fa-crosshairs"></i> MANUAL_OVERRIDE_INPUT
+                </div>
+                
+                <div class="input-zone">
+                    <div class="textarea-container">
+                        <textarea id="jobDescription" placeholder="// AWAITING_DATA_STREAM..."></textarea>
+                        <div class="scan-laser"></div>
+                        <div class="corner c-tl"></div><div class="corner c-tr"></div>
+                        <div class="corner c-bl"></div><div class="corner c-br"></div>
+                    </div>
+                    <div class="data-readout">
+                        <span id="charCount">BUFFER: 0 BYTES</span>
+                        <span id="scanStatus" class="blink">STATUS: IDLE</span>
+                    </div>
+                </div>
+
+                <div class="control-deck">
+                    <button id="analyzeBtn" class="init-btn">
+                        <span class="btn-text">INITIALIZE SCAN</span>
+                        <div class="btn-scan-line"></div>
+                    </button>
+                </div>
+
+                <div id="loader" class="loader-module hidden">
+                    <div class="bar-loader"></div>
+                    <span>DECRYPTING LINGUISTIC PATTERNS...</span>
+                </div>
+
+                <div id="resultContainer" class="terminal-output hidden">
+                    <div class="verdict-box">
+                        <span class="v-label">THREAT ANALYSIS</span>
+                        <h2 id="verdictTitle">--</h2>
+                    </div>
+                    <div class="confidence-box">
+                        <div class="conf-bar-bg"><div id="confidenceFill" class="conf-bar-fill"></div></div>
+                        <span id="confidenceScore">0%</span>
+                    </div>
+                    <div class="log-output">
+                        <p id="verdictMessage" class="typewriter"></p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel telemetry-panel">
+                <div class="panel-header">
+                    <i class="fa-solid fa-globe"></i> GLOBAL_THREAT_MONITOR
+                </div>
+
+                <div class="globe-container">
+                    <div class="wireframe-globe">
+                        <div class="globe-grid"></div>
+                        <div class="globe-equator"></div>
+                    </div>
+                    <div class="scanning-ring"></div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="m-label">NEURAL NET LOAD</span>
+                        <div class="m-bar-bg"><div class="m-bar-fill" style="width: 45%; animation: fluctuate 2s infinite"></div></div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="m-label">DATABASE LATENCY</span>
+                        <div class="m-bar-bg"><div class="m-bar-fill" style="width: 12%; animation: fluctuate 4s infinite"></div></div>
+                    </div>
+                    <div class="metric-item">
+                        <span class="m-label">API REQUESTS</span>
+                        <div class="m-bar-bg"><div class="m-bar-fill" style="width: 78%; animation: fluctuate 1s infinite"></div></div>
+                    </div>
+                </div>
+
+                <div class="live-logs">
+                    <div class="log-title">RECENT_INTERCEPTIONS:</div>
+                    <ul class="log-list">
+                        <li><span class="red">[BLOCKED]</span> IP: 192.168.X.X - Payload: 'Urgent Wire'</li>
+                        <li><span class="green">[VERIFIED]</span> IP: 10.0.X.X - Payload: 'Senior Dev'</li>
+                        <li><span class="red">[BLOCKED]</span> IP: 172.16.X.X - Payload: 'WhatsApp'</li>
+                        <li><span class="green">[VERIFIED]</span> IP: 192.168.X.X - Payload: 'Manager'</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

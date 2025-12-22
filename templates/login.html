@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobGuard | Secure Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+
+    <canvas id="matrixCanvas"></canvas>
+
+    <div class="auth-wrapper">
+        <div class="logo-area">
+            <h1>JOBGUARD_AI</h1>
+            <p>:: ACCESS_CONTROL_TERMINAL ::</p>
+        </div>
+
+        <div class="auth-box login-box">
+            <h2><i class="fa-solid fa-lock"></i> IDENTIFY YOURSELF</h2>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <i class="fa-solid fa-user icon"></i>
+                    <input type="text" id="loginUser" placeholder="USERNAME" required autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <i class="fa-solid fa-key icon"></i>
+                    <input type="password" id="loginPass" class="password-field" placeholder="PASSWORD" required>
+                    <button type="button" class="password-toggle"><i class="fa-solid fa-eye"></i></button>
+                </div>
+
+                <div class="options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="rememberCheck">
+                        <span class="checkmark"></span>
+                        REMEMBER_SESSION
+                    </label>
+                </div>
+
+                <button type="submit" class="cyber-btn">
+                    <span class="btn-text">INITIATE UPLINK</span>
+                    <div class="glitch-effect"></div>
+                </button>
+            </form>
+            
+            <div class="switch-mode">
+                <span>NEW OPERATOR?</span>
+                <a href="#" id="showSignup">ESTABLISH ID</a>
+            </div>
+        </div>
+
+        <div class="auth-box signup-box hidden">
+            <h2><i class="fa-solid fa-user-plus"></i> NEW REGISTRATION</h2>
+            
+            <form id="signupForm">
+                <div class="input-group">
+                    <i class="fa-solid fa-user icon"></i>
+                    <input type="text" id="signupUser" placeholder="CHOOSE USERNAME" required>
+                    <span class="validation-msg" id="userMsg"></span>
+                </div>
+
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope icon"></i>
+                    <input type="email" id="signupEmail" placeholder="EMAIL ADDRESS" required>
+                    <span class="validation-msg" id="emailMsg"></span>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fa-solid fa-key icon"></i>
+                    <input type="password" id="signupPass" class="password-field" placeholder="PASSWORD" required>
+                    <button type="button" class="password-toggle"><i class="fa-solid fa-eye"></i></button>
+                    <span class="validation-msg" id="passMsg"></span>
+                </div>
+
+                <button type="submit" class="cyber-btn" id="regBtn" disabled>
+                    <span class="btn-text">REGISTER UNIT</span>
+                </button>
+            </form>
+            
+            <div class="switch-mode">
+                <span>EXISTING ID?</span>
+                <a href="#" id="showLogin">RETURN TO LOGIN</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>
