@@ -4,16 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
     <title>Fake Job Detector - AI Scam Protection Tool | JobGuard AI</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2913/2913133.png">
-    
+
     <meta name="description" content="Free AI tool to detect fake job postings and recruitment scams. Paste any job description to instantly analyze it for fraud indicators using Machine Learning and NLP.">
-
     <meta name="keywords" content="fake job detector, scam detection, recruitment fraud, AI job analyzer, NLP scam scanner, jobguard ai, yoge-2004, online safety tools">
-
     <meta name="author" content="Yoge-2004">
     <meta name="application-name" content="JobGuard AI">
-
     <meta name="robots" content="index, follow">
 
     <link rel="canonical" href="https://huggingface.co/spaces/Yoge-2004/Fake-Job-Detector">
@@ -34,13 +32,8 @@
     <meta name="twitter:description" content="Don't get scammed. Verify job offers instantly with AI-powered fraud detection.">
     <meta name="twitter:image" content="https://huggingface.co/spaces/Yoge-2004/Fake-Job-Detector/resolve/main/static/og_preview.png">
 
-    <meta name="theme-color" content="#05080a">
-    <meta name="msapplication-navbutton-color" content="#05080a">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -52,7 +45,6 @@
         <div class="threat-obj obj-shield"><i class="fa-solid fa-shield-halved"></i></div>
         <div class="threat-obj obj-ghost"><i class="fa-solid fa-ghost"></i></div>
         <div class="threat-obj obj-bug"><i class="fa-solid fa-bug"></i></div>
-        <div class="threat-obj obj-eye"><i class="fa-solid fa-eye"></i></div>
     </div>
 
     <div class="interface-wrapper">
@@ -72,7 +64,6 @@
                     <button class="logout-btn delete-btn" id="deleteAccountBtn" title="Delete Account">
                         <i class="fa-solid fa-trash"></i>
                     </button>
-                    
                     <button class="logout-btn" id="logoutBtn" title="Logout">
                         <i class="fa-solid fa-power-off"></i>
                     </button>
@@ -84,7 +75,7 @@
             
             <section class="panel scanner-panel">
                 <div class="panel-header">
-                    <i class="fa-solid fa-crosshairs"></i> MANUAL_OVERRIDE_INPUT
+                    <i class="fa-solid fa-crosshairs"></i> <span class="header-text">MANUAL_OVERRIDE_INPUT</span>
                 </div>
                 
                 <div class="input-zone">
@@ -95,21 +86,20 @@
                         <div class="corner c-bl"></div><div class="corner c-br"></div>
                     </div>
                     <div class="data-readout">
-                        <span id="charCount">BUFFER: 0 BYTES</span>
+                        <span id="charCount">BUFFER: 0</span>
                         <span id="scanStatus" class="blink">STATUS: IDLE</span>
                     </div>
                 </div>
 
                 <div class="control-deck">
                     <button id="analyzeBtn" class="init-btn">
-                        <span class="btn-text">INITIALIZE SCAN</span>
-                        <div class="btn-scan-line"></div>
+                        INITIALIZE SCAN
                     </button>
                 </div>
 
                 <div id="loader" class="loader-module hidden">
                     <div class="bar-loader"></div>
-                    <span>DECRYPTING LINGUISTIC PATTERNS...</span>
+                    <span>DECRYPTING DATA...</span>
                 </div>
 
                 <div id="resultContainer" class="terminal-output hidden">
@@ -122,14 +112,14 @@
                         <span id="confidenceScore">0%</span>
                     </div>
                     <div class="log-output">
-                        <p id="verdictMessage" class="typewriter"></p>
+                        <p id="verdictMessage"></p>
                     </div>
                 </div>
             </section>
 
             <section class="panel telemetry-panel">
                 <div class="panel-header">
-                    <i class="fa-solid fa-globe"></i> GLOBAL_THREAT_MONITOR
+                    <i class="fa-solid fa-network-wired"></i> <span class="header-text">LIVE_TELEMETRY</span>
                 </div>
 
                 <div class="globe-container">
@@ -137,31 +127,32 @@
                         <div class="globe-grid"></div>
                         <div class="globe-equator"></div>
                     </div>
-                    <div class="scanning-ring"></div>
                 </div>
 
                 <div class="metrics-grid">
                     <div class="metric-item">
-                        <span class="m-label">NEURAL NET LOAD</span>
-                        <div class="m-bar-bg"><div class="m-bar-fill" style="width: 45%; animation: fluctuate 2s infinite"></div></div>
+                        <span class="m-label">NEURAL LOAD</span>
+                        <div class="m-bar-bg"><div class="m-bar-fill" style="animation: netLoad 3s infinite linear"></div></div>
                     </div>
                     <div class="metric-item">
-                        <span class="m-label">DATABASE LATENCY</span>
-                        <div class="m-bar-bg"><div class="m-bar-fill" style="width: 12%; animation: fluctuate 4s infinite"></div></div>
+                        <span class="m-label">DB LATENCY</span>
+                        <div class="m-bar-bg"><div class="m-bar-fill" style="animation: dbPulse 4s infinite ease-in-out"></div></div>
                     </div>
                     <div class="metric-item">
-                        <span class="m-label">API REQUESTS</span>
-                        <div class="m-bar-bg"><div class="m-bar-fill" style="width: 78%; animation: fluctuate 1s infinite"></div></div>
+                        <span class="m-label">API THREADS</span>
+                        <div class="m-bar-bg"><div class="m-bar-fill" style="animation: apiSmooth 4s infinite linear"></div></div>
                     </div>
                 </div>
 
                 <div class="live-logs">
-                    <div class="log-title">RECENT_INTERCEPTIONS:</div>
+                    <div class="log-header-row">
+                        <div class="log-title">>> SYSTEM LOGS</div>
+                        <button id="copyLogsBtn" class="copy-btn" title="Copy Logs">
+                            <i class="fa-solid fa-copy"></i> COPY
+                        </button>
+                    </div>
                     <ul class="log-list">
-                        <li><span class="red">[BLOCKED]</span> IP: 192.168.X.X - Payload: 'Urgent Wire'</li>
-                        <li><span class="green">[VERIFIED]</span> IP: 10.0.X.X - Payload: 'Senior Dev'</li>
-                        <li><span class="red">[BLOCKED]</span> IP: 172.16.X.X - Payload: 'WhatsApp'</li>
-                        <li><span class="green">[VERIFIED]</span> IP: 192.168.X.X - Payload: 'Manager'</li>
+                        <li>[SYSTEM] Ready...</li>
                     </ul>
                 </div>
             </section>
