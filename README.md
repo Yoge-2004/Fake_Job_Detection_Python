@@ -111,6 +111,7 @@ Fake_Job_Detection_Python/
 ├── README.md                         # Documentation
 ├── LICENSE                           # MIT License File
 │
+├── results.csv                       # Results of Supervised Learning
 ├── users.db                          # User Credentials Database (Auto-generated)
 ├── fake_job_postings.csv             # Raw Dataset for Training
 ├── production_fake_job_pipeline.pkl  # Supervised AI Model
