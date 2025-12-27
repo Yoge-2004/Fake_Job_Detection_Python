@@ -13,17 +13,24 @@
 body {
     background-color: var(--bg-dark);
     font-family: var(--font-ui);
-    height: 100vh;
+    /* ⚡ FIX: min-height allows scrolling on small screens/landscape */
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    /* ⚡ FIX: Allow vertical scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
     color: #fff;
+    /* Add padding so content doesn't touch edges on mobile */
+    padding: 40px 20px;
 }
 
 /* --- BACKGROUND --- */
 #matrixCanvas {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    /* ⚡ FIX: Fixed position keeps rain background static while content scrolls */
+    position: fixed; 
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: -1; opacity: 0.3;
 }
 
@@ -31,7 +38,7 @@ body {
 .auth-wrapper {
     width: 100%;
     max-width: 400px;
-    padding: 20px;
+    position: relative;
     z-index: 10;
     text-align: center;
 }
@@ -67,17 +74,16 @@ body {
     padding-bottom: 10px;
 }
 
-/* --- INPUT FIELDS (FIXED ALIGNMENT) --- */
+/* --- INPUT FIELDS --- */
 .input-group {
     position: relative; margin-bottom: 20px;
 }
 
-/* THE FIX: Fixed Height (45px) instead of 100% */
 .input-group .icon {
     position: absolute;
     left: 0;
     top: 0;
-    height: 45px;       /* FORCE HEIGHT to match Input Field */
+    height: 45px; /* Matches input height */
     width: 45px;
     display: flex;
     justify-content: center;
@@ -92,13 +98,13 @@ body {
     width: 100%;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid #333;
-    padding: 12px 12px 12px 45px; /* Left padding matches icon width */
+    padding: 12px 12px 12px 45px;
     color: #fff;
     font-family: var(--font-code);
     font-size: 0.9rem;
     outline: none;
     transition: 0.3s;
-    height: 45px; /* Fixed height for consistency */
+    height: 45px;
 }
 
 .input-group input:focus {
@@ -111,7 +117,7 @@ body {
     position: absolute;
     right: 0;
     top: 0;
-    height: 45px; /* FORCE HEIGHT to match Input Field */
+    height: 45px;
     width: 40px;
     display: flex;
     justify-content: center;
@@ -170,8 +176,8 @@ body {
     box-shadow: 0 0 25px var(--neon-cyan);
 }
 .cyber-btn:disabled {
-    border-color: #555; color: #555; cursor: not-allowed;
-    background: transparent; box-shadow: none;
+    cursor: not-allowed;
+    /* Style is controlled via JS for specific error states */
 }
 
 /* --- SWITCH MODE LINK --- */
