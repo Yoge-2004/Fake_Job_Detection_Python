@@ -140,15 +140,12 @@ def human_reasoning_engine(text):
     if "urgent" in text_lower and ("immediate" in text_lower or "seconds" in text_lower or "now" in text_lower):
         reasons.append("⚠️ **Artificial Urgency:** Scammers create pressure ('urgent', 'do it now') to force mistakes.")
 
-    # 4. MONEY MULE (CRITICAL FIX INCLUDED) 📦
-    # Detects: "Receive packages", "Residential address", "Repackage"
+    # 4. MONEY MULE (Updated Logic)
     mule_keywords = ["package", "parcel", "shipment"]
     action_keywords = ["receive", "repackage", "label", "forward"]
     location_keywords = ["residential", "home address", "your address"]
-    
     has_mule_action = any(a in text_lower for a in action_keywords) and any(p in text_lower for p in mule_keywords)
     has_mule_loc = any(l in text_lower for l in location_keywords)
-    
     if has_mule_action and has_mule_loc:
          reasons.append("📦 **Money Mule Alert:** Job involves receiving/forwarding packages at a personal address.")
 
@@ -195,7 +192,7 @@ except:
     import spacy
     nlp_engine = spacy.blank("en")
 
-# ⚡ ROBUST INJECTION (Ensures pipeline actually gets the model)
+# ⚡ ROBUST INJECTION
 def inject(est):
     if isinstance(est, SpacyVectorTransformer): 
         est.nlp = nlp_engine
@@ -309,8 +306,8 @@ def predict():
         
         if human_reasons:
             boost = 0.25
-            if any("Phishing" in r for r in human_reasons): boost = 0.40 # Critical Phishing Boost
-            if any("Money Mule" in r for r in human_reasons): boost = 0.40 # Critical Mule Boost
+            if any("Phishing" in r for r in human_reasons): boost = 0.40
+            if any("Money Mule" in r for r in human_reasons): boost = 0.40 # Mule Boost
             final_prob = min(final_prob + boost, 0.98)
             trace(f"Human Triggers Applied (+{boost})", "WARN")
 
@@ -377,9 +374,21 @@ def api_login():
     data = request.get_json()
     with sqlite3.connect(DB_NAME) as conn:
         row = conn.cursor().execute("SELECT password FROM users WHERE username = ?", (data['username'],)).fetchone()
+        
         if row and check_password_hash(row[0], data['password']):
-            session['user'] = data['username']; return jsonify({'success': True})
+            session['user'] = data['username']
+            
+            # Handle Remember Me
+            if data.get('remember') is True:
+                session.permanent = True
+            else:
+                session.permanent = False
+            
+            # ⚡ UPDATE: Return username so login.js can save it to localStorage
+            return jsonify({'success': True, 'username': data['username']})
+            
     return jsonify({'error': 'Failed'}), 401
+
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout(): session.clear(); return jsonify({'success': True})
@@ -395,9 +404,7 @@ def login_page(): return render_template('login.html')
 
 @app.route('/dashboard')
 def dashboard_page():
-    # 🔒 SECURITY FIX: Redirect if not logged in
-    if 'user' not in session:
-        return redirect(url_for('login_page'))
+    if 'user' not in session: return redirect(url_for('login_page'))
     return render_template('index.html', username=session['user'])
 
 if __name__ == '__main__':
