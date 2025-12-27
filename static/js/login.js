@@ -1,33 +1,51 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- 1. MATRIX RAIN ---
+    // ==========================================
+    // 1. MATRIX RAIN (RESPONSIVE FIX)
+    // ==========================================
     const canvas = document.getElementById('matrixCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const alphabet = '01'; 
+    
     const fontSize = 14;
-    const columns = canvas.width / fontSize;
-    const drops = [];
-    for(let x = 0; x < columns; x++) drops[x] = 1;
+    const alphabet = '01'; 
+    let columns = 0;
+    let drops = [];
+
+    function initMatrix() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        columns = Math.floor(canvas.width / fontSize);
+        drops = [];
+        for(let x = 0; x < columns; x++) {
+            drops[x] = Math.floor(Math.random() * -100); 
+        }
+    }
 
     const draw = () => {
         ctx.fillStyle = 'rgba(5, 8, 10, 0.05)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#0F0';
         ctx.font = fontSize + 'px monospace';
+
         for(let i = 0; i < drops.length; i++) {
             const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
             ctx.fillStyle = Math.random() > 0.9 ? '#00f3ff' : '#00ff9d';
-            ctx.fillText(text, i*fontSize, drops[i]*fontSize);
-            if(drops[i]*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
             drops[i]++;
         }
     };
-    setInterval(draw, 33);
-    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 
-    // --- 2. UI TOGGLES ---
+    initMatrix();
+    setInterval(draw, 33);
+    window.addEventListener('resize', initMatrix); // ⚡ FIX: Recalculate on rotation
+
+    // ==========================================
+    // 2. UI TOGGLES
+    // ==========================================
     const loginBox = document.querySelector('.login-box');
     const signupBox = document.querySelector('.signup-box');
     
@@ -59,22 +77,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 3. LOGIN LOGIC (UPDATED WITH REMEMBER ME) ---
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
+    // ==========================================
+    // 3. LOGIN LOGIC (UX ENHANCED)
+    // ==========================================
+    const loginForm = document.getElementById('loginForm');
+    const loginUser = document.getElementById('loginUser');
+    const loginPass = document.getElementById('loginPass');
+    
+    // Helper to find the button inside the form
+    const loginBtn = loginForm.querySelector('button[type="submit"]');
+    const btnText = loginBtn.querySelector('.btn-text');
+
+    // FUNCTION: Reset Button to Initial State
+    function resetLoginState() {
+        if (loginBtn.disabled || loginBtn.style.borderColor === "var(--neon-pink)") {
+            loginBtn.disabled = false;
+            loginBtn.style.borderColor = "var(--neon-cyan)";
+            loginBtn.style.background = "transparent";
+            loginBtn.style.color = "var(--neon-cyan)";
+            loginBtn.style.boxShadow = "none";
+            btnText.innerText = "INITIATE UPLINK";
+            loginBtn.style.cursor = "pointer";
+        }
+    }
+
+    // LISTENER: Reset state when user modifies text (⚡ FIX for UX)
+    loginUser.addEventListener('input', resetLoginState);
+    loginPass.addEventListener('input', resetLoginState);
+
+    loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const user = document.getElementById('loginUser').value;
-        const pass = document.getElementById('loginPass').value;
-        const btn = e.target.querySelector('button[type="submit"]');
+        const user = loginUser.value;
+        const pass = loginPass.value;
         
-        // GET CHECKBOX STATUS
         const rememberBox = document.getElementById('rememberCheck');
         const remember = rememberBox ? rememberBox.checked : false;
 
-        const originalText = btn.innerText;
-        btn.innerText = "AUTHENTICATING...";
-        btn.style.background = "var(--neon-green)";
-        btn.style.color = "#000";
-        btn.disabled = true;
+        btnText.innerText = "AUTHENTICATING...";
+        loginBtn.style.background = "rgba(0, 243, 255, 0.1)";
+        loginBtn.style.color = "var(--neon-cyan)";
+        loginBtn.disabled = true;
+        loginBtn.style.cursor = "wait";
 
         fetch('/api/login', {
             method: 'POST',
@@ -82,32 +125,44 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ 
                 username: user, 
                 password: pass,
-                remember: remember // Send to backend
+                remember: remember 
             })
         })
         .then(res => res.json())
         .then(data => {
             if(data.success) {
+                // ⚡ FIX: Save username for Dashboard self-healing
                 localStorage.setItem('jobGuardUser', data.username);
-                window.location.href = '/dashboard';
+                
+                loginBtn.style.borderColor = "var(--neon-green)";
+                loginBtn.style.color = "var(--neon-green)";
+                btnText.innerText = "ACCESS GRANTED";
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 500);
             } else {
-                alert("ACCESS DENIED: " + data.error);
-                btn.innerText = "TRY AGAIN";
-                btn.style.background = "var(--neon-pink)";
-                btn.style.color = "#fff";
-                btn.disabled = false;
+                // ⚡ FIX: Visual Error State (No Alert)
+                btnText.innerText = "ACCESS DENIED";
+                loginBtn.style.background = "var(--neon-pink)";
+                loginBtn.style.borderColor = "var(--neon-pink)";
+                loginBtn.style.color = "#fff";
+                loginBtn.style.boxShadow = "0 0 15px var(--neon-pink)";
+                loginBtn.style.cursor = "not-allowed";
+                // Button stays disabled until user types again
             }
         })
         .catch(err => {
             console.error(err);
-            alert("SERVER ERROR: Could not reach authentication node.");
-            btn.innerText = originalText;
-            btn.style.background = "";
-            btn.disabled = false;
+            btnText.innerText = "SYSTEM FAILURE";
+            loginBtn.style.borderColor = "#ffaa00";
+            loginBtn.style.color = "#ffaa00";
+            loginBtn.disabled = false;
         });
     });
 
-    // --- 4. SIGNUP LOGIC ---
+    // ==========================================
+    // 4. SIGNUP LOGIC
+    // ==========================================
     document.getElementById('signupForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const user = document.getElementById('signupUser').value;
@@ -133,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '/dashboard';
             } else {
                 alert("REGISTRATION FAILED: " + data.error);
-                btn.innerText = "REGISTER_UNIT";
+                btn.innerText = "REGISTER UNIT";
                 btn.style.background = "";
                 btn.disabled = false;
             }
@@ -145,7 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 5. VALIDATION ---
+    // ==========================================
+    // 5. VALIDATION
+    // ==========================================
     const sUser = document.getElementById('signupUser');
     const sEmail = document.getElementById('signupEmail');
     const sPass = document.getElementById('signupPass');
