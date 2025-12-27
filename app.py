@@ -127,9 +127,13 @@ def human_reasoning_engine(text):
     if "softwares" in text_lower:
         reasons.append("✍️ **Grammar Alert:** Non-standard plural 'softwares' detected.")
 
-    # 2. Scam Phrasing
-    if "kindly" in text_lower and ("pay" in text_lower or "deposit" in text_lower):
-        reasons.append("💸 **Scam Phrasing:** 'Kindly pay' pattern detected.")
+    # 2. Scam Phrasing & Aggressive Demands (UPDATED)
+    if ("pay" in text_lower or "deposit" in text_lower or "transfer" in text_lower):
+        if "kindly" in text_lower:
+            reasons.append("💸 **Scam Phrasing:** 'Kindly pay' pattern detected.")
+        if "immediately" in text_lower or "now" in text_lower:
+            reasons.append("💸 **Aggressive Demand:** Legitimate jobs never demand payment 'immediately' or 'now'.")
+
     if "provide" in text_lower and ("laptop" in text_lower or "equipment" in text_lower) and "work from home" in text_lower:
         reasons.append("⚠️ **Equipment Promise:** Promise of free laptop/equipment is a common scam tactic.")
         
@@ -137,10 +141,12 @@ def human_reasoning_engine(text):
     if ("update" in text_lower or "fill" in text_lower) and "profile" in text_lower and ("link" in text_lower or "click" in text_lower or "button" in text_lower):
         reasons.append("🎣 **Phishing Alert:** Request to click a link to 'update profile' is a common data harvesting tactic.")
     
-    if "urgent" in text_lower and ("immediate" in text_lower or "seconds" in text_lower or "now" in text_lower):
-        reasons.append("⚠️ **Artificial Urgency:** Scammers create pressure ('urgent', 'do it now') to force mistakes.")
+    # Broader Urgency Check
+    if "urgent" in text_lower or "immediately" in text_lower:
+        if "hiring" in text_lower or "seconds" in text_lower or "now" in text_lower:
+             reasons.append("⚠️ **Artificial Urgency:** Scammers create pressure to force mistakes.")
 
-    # 4. MONEY MULE (Updated Logic)
+    # 4. MONEY MULE (CRITICAL FIX)
     mule_keywords = ["package", "parcel", "shipment"]
     action_keywords = ["receive", "repackage", "label", "forward"]
     location_keywords = ["residential", "home address", "your address"]
@@ -307,7 +313,7 @@ def predict():
         if human_reasons:
             boost = 0.25
             if any("Phishing" in r for r in human_reasons): boost = 0.40
-            if any("Money Mule" in r for r in human_reasons): boost = 0.40 # Mule Boost
+            if any("Money Mule" in r for r in human_reasons): boost = 0.40
             final_prob = min(final_prob + boost, 0.98)
             trace(f"Human Triggers Applied (+{boost})", "WARN")
 
@@ -377,18 +383,15 @@ def api_login():
         
         if row and check_password_hash(row[0], data['password']):
             session['user'] = data['username']
-            
-            # Handle Remember Me
+            # ⚡ REMEMBER ME FIX
             if data.get('remember') is True:
                 session.permanent = True
             else:
                 session.permanent = False
-            
-            # ⚡ UPDATE: Return username so login.js can save it to localStorage
+            # ⚡ RETURN USERNAME FOR SELF-HEALING
             return jsonify({'success': True, 'username': data['username']})
             
     return jsonify({'error': 'Failed'}), 401
-
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout(): session.clear(); return jsonify({'success': True})
