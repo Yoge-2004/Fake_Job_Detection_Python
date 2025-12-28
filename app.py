@@ -3,7 +3,7 @@ from datetime import datetime
 import traceback
 
 # ==========================================
-# 0. CRADLE LOGGING (FIRST)
+# 0. CRADLE LOGGING
 # ==========================================
 SERVER_LOGS = []
 
@@ -105,12 +105,11 @@ __main__.SpacyVectorTransformer = SpacyVectorTransformer
 __main__.RobustAnomalyDetector = RobustAnomalyDetector
 
 # ==========================================
-# 3. HEURISTIC ENGINE (The Safety Net)
+# 3. HEURISTIC & VALIDATION ENGINE
 # ==========================================
 def heuristic_analysis(text):
     text_lower = text.lower(); warnings = []
     
-    # Behavioral Patterns
     behavioral_patterns = [
         (r"(validate|verify).{0,20}(bank|account|wallet)", "🎣 **Phishing:** Request to validate financial info."),
         (r"(click|follow).{0,20}(link|url).{0,20}(verify|update)", "🎣 **Phishing:** 'Click link to verify' pattern."),
@@ -120,7 +119,6 @@ def heuristic_analysis(text):
     for pattern, msg in behavioral_patterns:
         if re.search(pattern, text_lower): warnings.append(msg)
 
-    # Keywords
     triggers = {
         "telegram": "🚨 **Platform:** Telegram contact.",
         "signal": "🚨 **Platform:** Signal (Encrypted) contact.",
@@ -131,10 +129,8 @@ def heuristic_analysis(text):
     }
     for word, msg in triggers.items():
         if word in text_lower: warnings.append(msg)
-        
     return warnings
 
-# 🟢 THIS WAS MISSING - NOW ADDED BACK
 def metadata_check(text):
     advisory = []
     text_low = text.lower()
@@ -154,6 +150,27 @@ def extract_structural_features(text):
     word_count = len(text.split())
     return [caps/length, digits/length, specials/length, 1 if "@" in text else 0, 0, 1 if "http" in text else 0, word_count]
 
+# 🟢 NEW: EXPLICIT LANGUAGE/CODE DETECTOR
+def detect_invalid_language(text):
+    if not text: return False, []
+    
+    issues = []
+    length = len(text)
+    
+    # 1. Non-English (Unicode) Check
+    # Counts characters outside basic ASCII (0-127)
+    non_ascii_count = len(re.findall(r'[^\x00-\x7F]', text))
+    if (non_ascii_count / length) > 0.2: # If > 20% is Foreign/Symbols
+        issues.append("Language Error: Non-English text detected (Tamil/Hindi/etc)")
+    
+    # 2. Code/Markup Check
+    # Counts code symbols like { } < > ; = [ ]
+    code_symbols = len(re.findall(r'[\{\}\<\>;=\[\]]', text))
+    if (code_symbols / length) > 0.1: # If > 10% is Syntax
+        issues.append("Language Error: Input looks like Source Code or HTML")
+
+    return (len(issues) > 0), issues
+
 # ==========================================
 # 4. APP & MODEL LOADING
 # ==========================================
@@ -163,7 +180,6 @@ app.permanent_session_lifetime = timedelta(days=30)
 DB_NAME = "users.db"
 cache = Cache(app, config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 3600})
 
-# -- LOAD SPACY --
 nlp_engine = None
 try:
     import spacy
@@ -174,7 +190,6 @@ except:
     nlp_engine = spacy.blank("en")
     log_debug("⚠️ Spacy Failed. Using Blank.", "WARN")
 
-# -- LOAD MODEL 1: SKLEARN PIPELINE --
 sklearn_pipeline = None
 def force_inject_spacy(estimator, nlp_engine):
     if isinstance(estimator, SpacyVectorTransformer): estimator.nlp = nlp_engine
@@ -191,7 +206,6 @@ if os.path.exists('production_fake_job_pipeline.pkl'):
     except Exception as e:
         log_debug(f"❌ Sklearn Load Failed: {e}", "ERROR")
 
-# -- LOAD MODEL 2: DISTILBERT --
 bert_tokenizer = None; bert_model = None
 BERT_PATH = "." 
 
@@ -206,7 +220,6 @@ if os.path.exists("model.safetensors"):
 else:
     log_debug(f"⚠️ BERT files not found in current directory.", "WARN")
 
-# -- LOAD MODEL 3: ANOMALY DETECTOR --
 anomaly_model = None
 if os.path.exists('robust_anomaly_model.pkl'):
     try:
@@ -214,7 +227,6 @@ if os.path.exists('robust_anomaly_model.pkl'):
         log_debug("✅ Anomaly Detector Loaded", "SUCCESS")
     except: pass
 
-# -- XAI SETUP --
 explainer = LimeTextExplainer(class_names=['Real', 'Fake'])
 
 def bert_lime_predict(texts):
@@ -248,6 +260,25 @@ def predict():
             return jsonify(cached)
 
         trace(f"New Scan: {len(text)} chars", "INIT")
+        
+        # 🟢 CHECK: LANGUAGE & GIBBERISH
+        is_invalid_lang, lang_issues = detect_invalid_language(text)
+        if is_invalid_lang:
+            trace(f"Language Error: {lang_issues[0]}", "BLOCK")
+            response = {
+                'fraud_probability': 0, # Neutral score but...
+                'is_gibberish': True,   # ...this Flag triggers YELLOW in UI
+                'reasons': [],
+                'advisory': [],
+                'anomaly_analysis': lang_issues,
+                'xai_insights': [],
+                'system_logs': list(reversed(trace_logs)),
+                'verdict': "Invalid"
+            }
+            cache.set(text_hash, response)
+            return jsonify(response)
+
+        # START NORMAL AI PIPELINE
         doc = nlp_engine(text); g.spacy_doc = doc
 
         # --- MODEL 1: BERT ---
@@ -277,7 +308,7 @@ def predict():
 
         # --- HEURISTICS & ADVISORY ---
         heuristic_alerts = heuristic_analysis(text)
-        advisory_notes = metadata_check(text) # <--- Now defined and called correctly
+        advisory_notes = metadata_check(text) 
         
         # --- ENSEMBLE VOTING ---
         heuristic_score = 0.95 if heuristic_alerts else 0.05
@@ -288,16 +319,13 @@ def predict():
         if bert_score > 0.90:
             final_prob = max(final_prob, bert_score)
 
-        # 🛡️ ANOMALY OVERRIDE (Critical Fix)
+        # Anomaly Override
         if anomaly_alerts:
-            # If structure is broken, BERT's opinion on "meaning" is invalid.
-            # We treat structural failure as a high-probability fraud indicator.
-            # Force the score to be at least 55% (Fake) or add a massive penalty (+40%)
             original_score = final_prob
             final_prob = max(final_prob + 0.40, 0.55) 
-            final_prob = min(final_prob, 0.99) # Cap at 99%
+            final_prob = min(final_prob, 0.99) 
             trace(f"Anomaly Critical Override: {original_score:.2f} -> {final_prob:.2f}", "WARN")
-            
+
         trace(f"Ensemble Result: {final_prob:.4f}", "RESULT")
 
         # --- XAI GENERATION ---
@@ -306,13 +334,14 @@ def predict():
             try:
                 exp = explainer.explain_instance(text, bert_lime_predict, num_features=4, num_samples=20)
                 lime_insights = [f"**{w}** ({s:+.2f})" for w, s in exp.as_list() if abs(s) > 0.05]
-            except Exception as e: trace(f"LIME Error: {e}", "ERROR")
+            except Exception as e: pass
 
         response = {
             'fraud_probability': round(final_prob * 100, 2),
             'reasons': heuristic_alerts,
             'advisory': advisory_notes,
             'anomaly_analysis': anomaly_alerts,
+            'is_gibberish': False, # Explicitly False for normal flow
             'xai_insights': lime_insights,
             'system_logs': list(reversed(trace_logs)),
             'verdict': "Fake" if final_prob > 0.45 else "Real"
