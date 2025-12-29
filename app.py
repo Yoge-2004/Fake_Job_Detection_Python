@@ -237,7 +237,7 @@ def bert_lime_predict(texts):
     return F.softmax(logits, dim=1).numpy()
 
 # ==========================================
-# 5. PREDICTION LOGIC (ENSEMBLE)
+# 5. PREDICTION LOGIC (SMART ENSEMBLE)
 # ==========================================
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -261,13 +261,13 @@ def predict():
 
         trace(f"New Scan: {len(text)} chars", "INIT")
         
-        # 🟢 CHECK: LANGUAGE & GIBBERISH
+        # 🟢 1. CHECK: LANGUAGE & GIBBERISH
         is_invalid_lang, lang_issues = detect_invalid_language(text)
         if is_invalid_lang:
             trace(f"Language Error: {lang_issues[0]}", "BLOCK")
             response = {
-                'fraud_probability': 0, # Neutral score but...
-                'is_gibberish': True,   # ...this Flag triggers YELLOW in UI
+                'fraud_probability': 0, # Neutral score 
+                'is_gibberish': True,   # Triggers YELLOW UI
                 'reasons': [],
                 'advisory': [],
                 'anomaly_analysis': lang_issues,
@@ -281,7 +281,7 @@ def predict():
         # START NORMAL AI PIPELINE
         doc = nlp_engine(text); g.spacy_doc = doc
 
-        # --- MODEL 1: BERT ---
+        # --- MODEL 1: BERT (Context Brain) ---
         bert_score = 0.5
         if bert_model:
             inputs = bert_tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
@@ -290,7 +290,7 @@ def predict():
             bert_score = F.softmax(outputs.logits, dim=1)[0][1].item()
             trace(f"BERT Confidence: {bert_score:.4f}", "AI")
 
-        # --- MODEL 2: SKLEARN PIPELINE ---
+        # --- MODEL 2: SKLEARN PIPELINE (Pattern Brain) ---
         sklearn_score = 0.5
         if sklearn_pipeline:
             sklearn_score = sklearn_pipeline.predict_proba([text])[0][1]
@@ -298,7 +298,7 @@ def predict():
         else:
             sklearn_score = bert_score 
 
-        # --- MODEL 3: ANOMALY DETECTOR ---
+        # --- MODEL 3: ANOMALY DETECTOR (Structure Brain) ---
         anomaly_alerts = []
         if anomaly_model:
             stats = extract_structural_features(text)
@@ -313,18 +313,38 @@ def predict():
         # --- ENSEMBLE VOTING ---
         heuristic_score = 0.95 if heuristic_alerts else 0.05
         
+        # Weighted Vote: BERT (60%) + Pipeline (25%) + Heuristics (15%)
         final_prob = (bert_score * 0.60) + (sklearn_score * 0.25) + (heuristic_score * 0.15)
         
-        # Genius Override
+        # 🚀 GENIUS OVERRIDE (Trust BERT if highly confident)
         if bert_score > 0.90:
             final_prob = max(final_prob, bert_score)
 
-        # Anomaly Override
+        # 🛡️ SMART ANOMALY OVERRIDE (Fixes Cognizant False Positive)
         if anomaly_alerts:
-            original_score = final_prob
-            final_prob = max(final_prob + 0.40, 0.55) 
-            final_prob = min(final_prob, 0.99) 
-            trace(f"Anomaly Critical Override: {original_score:.2f} -> {final_prob:.2f}", "WARN")
+            # Extract MSE value to judge severity
+            mse_value = 0.0
+            for alert in anomaly_alerts:
+                match = re.search(r"MSE:\s*([\d\.]+)", alert)
+                if match:
+                    mse_value = float(match.group(1))
+            
+            # Apply Dynamic Logic
+            if mse_value > 0.02: 
+                # Case A: High Error (Gibberish/Obfuscation) -> FORCE FAKE
+                original_score = final_prob
+                final_prob = max(final_prob + 0.40, 0.55)
+                final_prob = min(final_prob, 0.99)
+                trace(f"Anomaly Critical Override (High MSE {mse_value}): {original_score:.2f} -> {final_prob:.2f}", "WARN")
+            
+            elif mse_value > 0.008:
+                # Case B: Medium Error (Weird formatting) -> SMALL PENALTY
+                final_prob = min(final_prob + 0.10, 0.80)
+                trace(f"Anomaly Soft Penalty (Med MSE {mse_value}): +10%", "WARN")
+                
+            else:
+                # Case C: Low Error (Complex Real Job) -> IGNORE
+                trace(f"Anomaly Ignored (Low MSE {mse_value}): Trusting BERT", "INFO")
 
         trace(f"Ensemble Result: {final_prob:.4f}", "RESULT")
 
@@ -341,7 +361,7 @@ def predict():
             'reasons': heuristic_alerts,
             'advisory': advisory_notes,
             'anomaly_analysis': anomaly_alerts,
-            'is_gibberish': False, # Explicitly False for normal flow
+            'is_gibberish': False,
             'xai_insights': lime_insights,
             'system_logs': list(reversed(trace_logs)),
             'verdict': "Fake" if final_prob > 0.45 else "Real"
