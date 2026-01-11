@@ -410,7 +410,7 @@ def predict():
         lime_insights = []
         if final_prob > 0.35:
             try:
-                exp = explainer.explain_instance(text, bert_lime_predict, num_features=4)
+                exp = explainer.explain_instance(text, bert_lime_predict, num_features=4, num_samples=50)
                 lime_insights = [f"**{w}**" for w, s in exp.as_list() if s > 0]
             except: pass
 
