@@ -248,17 +248,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const root = document.documentElement;
         let uiColor, titleText, rgbaColor, statusText;
 
-        // VERDICT LOGIC
+        // ==========================================
+        // ⚡ VERDICT LOGIC (Aligned with Backend)
+        // ==========================================
         if (data.is_gibberish) {
-            uiColor = "var(--neon-yellow)"; titleText = "LANGUAGE ERROR"; rgbaColor = "rgba(255, 255, 0, 0.1)"; statusText = ">> INVALID DATA";
-        } else if (prob <= 30) {
-            uiColor = "var(--neon-green)"; titleText = "SYSTEM CLEAN"; rgbaColor = "rgba(0, 255, 157, 0.1)"; statusText = ">> CLEAN SIGNAL";
-        } else if (prob <= 60) {
-            uiColor = "#ffff00"; titleText = "MODERATE RISK"; rgbaColor = "rgba(255, 255, 0, 0.1)"; statusText = ">> CAUTION ADVISED";
+            uiColor = "var(--neon-yellow)"; 
+            titleText = "LANGUAGE ERROR"; 
+            rgbaColor = "rgba(255, 255, 0, 0.1)"; 
+            statusText = ">> INVALID DATA";
+            
+        } else if (prob <= 35) {
+            // GREEN: System Clean (0-35%)
+            uiColor = "var(--neon-green)"; 
+            titleText = "SYSTEM CLEAN"; 
+            rgbaColor = "rgba(0, 255, 157, 0.1)"; 
+            statusText = ">> CLEAN SIGNAL";
+            
+        } else if (prob <= 55) {
+            // YELLOW: Review Required (36-55%)
+            uiColor = "#ffff00"; 
+            titleText = "REVIEW REQUIRED"; 
+            rgbaColor = "rgba(255, 255, 0, 0.1)"; 
+            statusText = ">> SUSPICIOUS ACTIVITY";
+            
         } else if (prob < 85) {
-            uiColor = "var(--neon-orange)"; titleText = "HIGH RISK"; rgbaColor = "rgba(255, 165, 0, 0.1)"; statusText = ">> THREAT DETECTED";
+            // ORANGE: High Risk (56-84%)
+            uiColor = "var(--neon-orange)"; 
+            titleText = "HIGH RISK"; 
+            rgbaColor = "rgba(255, 165, 0, 0.1)"; 
+            statusText = ">> THREAT DETECTED";
+            
         } else {
-            uiColor = "var(--neon-pink)"; titleText = "CRITICAL THREAT"; rgbaColor = "rgba(255, 0, 153, 0.1)"; statusText = ">> MALICIOUS PATTERN";
+            // RED: Critical (85%+)
+            uiColor = "var(--neon-pink)"; 
+            titleText = "CRITICAL THREAT"; 
+            rgbaColor = "rgba(255, 0, 153, 0.1)"; 
+            statusText = ">> MALICIOUS PATTERN";
         }
 
         // UPDATE UI
@@ -292,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.advisory && data.advisory.length > 0) {
             const advDiv = document.createElement('div');
             
-            // ⚡ FIX: Add Top Margin to prevent overlap with Percentage
+            // ⚡ FIX: Add Top Margin to prevent overlap with Percentage Bar
             advDiv.style.marginTop = "25px";
              
             advDiv.style.borderLeft = "3px solid var(--neon-cyan)"; 
@@ -301,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
             advDiv.style.marginBottom = "15px";
             
             let advHtml = `<h4 style="margin:0 0 5px 0; color:var(--neon-cyan); font-size:0.9rem;">ℹ️ ADVISORY NOTES</h4><ul style="margin:0; padding-left:20px; color:#ccc;">`;
-            data.advisory.forEach(a => advHtml += `<li>${formatText(a.replace('ℹ️', ''))}</li>`);
+            data.advisory.forEach(a => advHtml += `<li>${formatText(a.replace('ℹ️', '').trim())}</li>`);
             advHtml += `</ul>`; 
             advDiv.innerHTML = advHtml; 
             msgBox.appendChild(advDiv);
@@ -351,3 +376,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+        
