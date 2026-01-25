@@ -422,7 +422,7 @@ def ensemble_lime_predict(texts: List[str]) -> np.ndarray:
                 return_tensors="pt", 
                 padding=True, 
                 truncation=True, 
-                max_length=128
+                max_length=512
             )
             with torch.no_grad():
                 logits = bert_model(**inputs).logits
