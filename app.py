@@ -398,37 +398,85 @@ if os.path.exists('robust_anomaly_model.pkl'):
 # --- Initialize Explainer ---
 explainer = LimeTextExplainer(class_names=['Real', 'Fake'])
 
-def bert_lime_predict(texts: List[str]) -> np.ndarray:
-    """
-    Optimized prediction function for LIME.
-    Handles batching to prevent OOM errors and reduces sequence length for speed.
-    """
-    if not bert_model:
-        return np.array([[0.5, 0.5]] * len(texts))
+# ==========================================
+# 5. ENSEMBLE PREDICTION FOR LIME
+# ==========================================
 
-    batch_size = 16
-    all_probs = []
+def ensemble_lime_predict(texts: List[str]) -> np.ndarray:
+    """
+    A unified prediction function for LIME that replicates the system's 
+    multi-model consensus logic (BERT + Sklearn).
+    
+    This ensures that LIME explains the *Combined* decision, not just BERT's.
+    """
+    num_samples = len(texts)
+    
+    # 1. Get BERT Probabilities (with Batching)
+    bert_probs = np.zeros(num_samples)
+    if bert_model:
+        batch_size = 16
+        for i in range(0, num_samples, batch_size):
+            batch_texts = texts[i:i + batch_size]
+            inputs = bert_tokenizer(
+                batch_texts, 
+                return_tensors="pt", 
+                padding=True, 
+                truncation=True, 
+                max_length=128
+            )
+            with torch.no_grad():
+                logits = bert_model(**inputs).logits
+                batch_probs = F.softmax(logits, dim=1).numpy()
+                bert_probs[i:i+batch_size] = batch_probs[:, 1] # Store 'Fake' prob only
+    else:
+        bert_probs[:] = 0.5  # Fallback
 
-    for i in range(0, len(texts), batch_size):
-        batch_texts = texts[i:i + batch_size]
-        # Use a shorter max_length for explanations to speed up processing
-        inputs = bert_tokenizer(
-            batch_texts, 
-            return_tensors="pt", 
-            padding=True, 
-            truncation=True, 
-            max_length=128 
-        )
+    # 2. Get Sklearn Probabilities
+    sklearn_probs = np.zeros(num_samples)
+    if sklearn_pipeline:
+        try:
+            # Sklearn pipelines usually handle lists of strings directly
+            sk_preds = sklearn_pipeline.predict_proba(texts)
+            sklearn_probs = sk_preds[:, 1]
+        except Exception:
+            sklearn_probs[:] = 0.5
+    else:
+        sklearn_probs[:] = 0.5
+
+    # 3. Combine Logic (Vectorized equivalent of the 'predict' route logic)
+    final_probs = []
+    
+    for pb, ps in zip(bert_probs, sklearn_probs):
+        final_prob = 0.0
         
-        with torch.no_grad():
-            logits = bert_model(**inputs).logits
-            probs = F.softmax(logits, dim=1).numpy()
-            all_probs.append(probs)
+        # --- Logic mirroring the main predict() route ---
+        # 1. BERT Authority
+        if pb > 0.85:
+            final_prob = pb
+        # 2. Sklearn Backup
+        elif ps > 0.80:
+            final_prob = ps
+        # 3. Consensus
+        elif pb > 0.60 and ps > 0.60:
+            final_prob = (pb + ps) / 2
+        # 4. Review / Mixed Logic
+        else:
+            final_prob = max(pb, ps)
+            
+            # Note: We omit the complex 'Anomaly' override here because LIME
+            # perturbs text, not the structural anomalies. We focus on text classifiers.
+            
+            # Simple fallback for low-confidence zones
+            if final_prob < 0.45:
+                 # If both are very low, trust the safety
+                 pass 
+        
+        final_probs.append([1 - final_prob, final_prob])
 
-    return np.vstack(all_probs)
+    return np.array(final_probs)
 
 # ==========================================
-# 5. PREDICTION LOGIC
+# 6. MAIN PREDICTION ROUTE
 # ==========================================
 
 @app.route('/predict', methods=['POST'])
@@ -537,7 +585,6 @@ def predict() -> Any:
         else:
             max_risk = max(bert_score, sklearn_score)
             
-            # Trust ultra-safe BERT (<10%) or reasonably safe consensus (<30%)
             is_proven_safe = (bert_score < 0.10) or (bert_score < 0.20 and sklearn_score < 0.30)
             suspects_something = False
             
@@ -561,16 +608,15 @@ def predict() -> Any:
         trace(f"Final Scoring: {final_prob:.4f}", "RESULT")
 
         # =========================================================
-        # 🔍 UPDATED XAI GENERATION
+        # 🔍 UPDATED XAI GENERATION (ENSEMBLE)
         # =========================================================
         lime_insights = []
         if final_prob > 0.35:
             try:
-                # Force LIME to explain why it might be 'Fake' (Label 1)
-                # num_samples=100 ensures stability
+                # Use the new ENSEMBLE predictor that combines both models
                 exp = explainer.explain_instance(
                     text, 
-                    bert_lime_predict, 
+                    ensemble_lime_predict,  # <--- CHANGED FROM BERT TO ENSEMBLE
                     labels=(1,), 
                     num_features=6, 
                     num_samples=100
@@ -610,7 +656,7 @@ def predict() -> Any:
         return jsonify({'error': str(e)}), 500
 
 # ==========================================
-# 6. DATABASE & AUTH ROUTES
+# 7. DATABASE & AUTH ROUTES
 # ==========================================
 
 def init_db() -> None:
